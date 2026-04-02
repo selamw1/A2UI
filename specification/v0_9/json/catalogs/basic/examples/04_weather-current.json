@@ -1,246 +1,180 @@
-[
-  {
-    "version": "v0.9",
-    "createSurface": {
-      "surfaceId": "gallery-weather-current",
-      "catalogId": "https://a2ui.org/specification/v0_9/basic_catalog.json",
-      "sendDataModel": true
-    }
-  },
-  {
-    "version": "v0.9",
-    "updateComponents": {
-      "surfaceId": "gallery-weather-current",
-      "components": [
-        {
-          "id": "root",
-          "component": "Card",
-          "child": "main-column"
-        },
-        {
-          "id": "main-column",
-          "component": "Column",
-          "children": [
-            "temp-row",
-            "location",
-            "description",
-            "forecast-row"
-          ],
-          "align": "center"
-        },
-        {
-          "id": "temp-row",
-          "component": "Row",
-          "children": [
-            "temp-high",
-            "temp-low"
-          ],
-          "align": "start"
-        },
-        {
-          "id": "temp-high",
-          "component": "Text",
-          "text": {
-            "path": "/tempHigh"
-          },
-          "variant": "h1"
-        },
-        {
-          "id": "temp-low",
-          "component": "Text",
-          "text": {
-            "path": "/tempLow"
-          },
-          "variant": "h2"
-        },
-        {
-          "id": "location",
-          "component": "Text",
-          "text": {
-            "path": "/location"
-          },
-          "variant": "h3"
-        },
-        {
-          "id": "description",
-          "component": "Text",
-          "text": {
-            "path": "/description"
-          },
-          "variant": "caption"
-        },
-        {
-          "id": "forecast-row",
-          "component": "Row",
-          "children": [
-            "day1",
-            "day2",
-            "day3",
-            "day4",
-            "day5"
-          ],
-          "justify": "spaceAround"
-        },
-        {
-          "id": "day1",
-          "component": "Column",
-          "children": [
-            "day1-icon",
-            "day1-temp"
-          ],
-          "align": "center"
-        },
-        {
-          "id": "day1-icon",
-          "component": "Text",
-          "text": {
-            "path": "/forecast/0/icon"
-          },
-          "variant": "h3"
-        },
-        {
-          "id": "day1-temp",
-          "component": "Text",
-          "text": {
-            "path": "/forecast/0/temp"
-          },
-          "variant": "caption"
-        },
-        {
-          "id": "day2",
-          "component": "Column",
-          "children": [
-            "day2-icon",
-            "day2-temp"
-          ],
-          "align": "center"
-        },
-        {
-          "id": "day2-icon",
-          "component": "Text",
-          "text": {
-            "path": "/forecast/1/icon"
-          },
-          "variant": "h3"
-        },
-        {
-          "id": "day2-temp",
-          "component": "Text",
-          "text": {
-            "path": "/forecast/1/temp"
-          },
-          "variant": "caption"
-        },
-        {
-          "id": "day3",
-          "component": "Column",
-          "children": [
-            "day3-icon",
-            "day3-temp"
-          ],
-          "align": "center"
-        },
-        {
-          "id": "day3-icon",
-          "component": "Text",
-          "text": {
-            "path": "/forecast/2/icon"
-          },
-          "variant": "h3"
-        },
-        {
-          "id": "day3-temp",
-          "component": "Text",
-          "text": {
-            "path": "/forecast/2/temp"
-          },
-          "variant": "caption"
-        },
-        {
-          "id": "day4",
-          "component": "Column",
-          "children": [
-            "day4-icon",
-            "day4-temp"
-          ],
-          "align": "center"
-        },
-        {
-          "id": "day4-icon",
-          "component": "Text",
-          "text": {
-            "path": "/forecast/3/icon"
-          },
-          "variant": "h3"
-        },
-        {
-          "id": "day4-temp",
-          "component": "Text",
-          "text": {
-            "path": "/forecast/3/temp"
-          },
-          "variant": "caption"
-        },
-        {
-          "id": "day5",
-          "component": "Column",
-          "children": [
-            "day5-icon",
-            "day5-temp"
-          ],
-          "align": "center"
-        },
-        {
-          "id": "day5-icon",
-          "component": "Text",
-          "text": {
-            "path": "/forecast/4/icon"
-          },
-          "variant": "h3"
-        },
-        {
-          "id": "day5-temp",
-          "component": "Text",
-          "text": {
-            "path": "/forecast/4/temp"
-          },
-          "variant": "caption"
-        }
-      ]
-    }
-  },
-  {
-    "version": "v0.9",
-    "updateDataModel": {
-      "surfaceId": "gallery-weather-current",
-      "value": {
-        "tempHigh": "72°",
-        "tempLow": "58°",
-        "location": "Austin, TX",
-        "description": "Clear skies with light breeze",
-        "forecast": [
+{
+  "name": "Weather Current",
+  "description": "Example of weather current demonstrating templating and string formatting.",
+  "messages": [
+    {
+      "version": "v0.9",
+      "createSurface": {
+        "surfaceId": "gallery-weather-current",
+        "catalogId": "https://a2ui.org/specification/v0_9/basic_catalog.json",
+        "sendDataModel": true
+      }
+    },
+    {
+      "version": "v0.9",
+      "updateComponents": {
+        "surfaceId": "gallery-weather-current",
+        "components": [
           {
-            "icon": "☀️",
-            "temp": "74°"
+            "id": "root",
+            "component": "Card",
+            "child": "main-column"
           },
           {
-            "icon": "☀️",
-            "temp": "76°"
+            "id": "main-column",
+            "component": "Column",
+            "children": [
+              "temp-row",
+              "location",
+              "description",
+              "forecast-row"
+            ],
+            "align": "center"
           },
           {
-            "icon": "⛅",
-            "temp": "71°"
+            "id": "temp-row",
+            "component": "Row",
+            "children": [
+              "temp-high",
+              "temp-low"
+            ],
+            "align": "start"
           },
           {
-            "icon": "☀️",
-            "temp": "73°"
+            "id": "temp-high",
+            "component": "Text",
+            "text": {
+              "call": "formatString",
+              "args": {
+                "value": "${/tempHigh}°"
+              },
+              "returnType": "string"
+            },
+            "variant": "h1"
           },
           {
-            "icon": "☀️",
-            "temp": "75°"
+            "id": "temp-low",
+            "component": "Text",
+            "text": {
+              "call": "formatString",
+              "args": {
+                "value": "${/tempLow}°"
+              },
+              "returnType": "string"
+            },
+            "variant": "h2"
+          },
+          {
+            "id": "location",
+            "component": "Text",
+            "text": {
+              "path": "/location"
+            },
+            "variant": "h3"
+          },
+          {
+            "id": "description",
+            "component": "Text",
+            "text": {
+              "path": "/description"
+            },
+            "variant": "caption"
+          },
+          {
+            "id": "forecast-row",
+            "component": "Row",
+            "children": {
+              "path": "/forecast",
+              "componentId": "forecast-day-template"
+            },
+            "justify": "spaceAround"
+          },
+          {
+            "id": "forecast-day-template",
+            "component": "Column",
+            "children": [
+              "day-name",
+              "day-icon",
+              "day-temp"
+            ],
+            "align": "center"
+          },
+          {
+            "id": "day-name",
+            "component": "Text",
+            "text": {
+              "call": "formatDate",
+              "args": {
+                "value": {
+                  "path": "date"
+                },
+                "format": "E"
+              },
+              "returnType": "string"
+            },
+            "variant": "caption"
+          },
+          {
+            "id": "day-icon",
+            "component": "Text",
+            "text": {
+              "path": "icon"
+            },
+            "variant": "h3"
+          },
+          {
+            "id": "day-temp",
+            "component": "Text",
+            "text": {
+              "call": "formatString",
+              "args": {
+                "value": "${temp}°"
+              },
+              "returnType": "string"
+            },
+            "variant": "caption"
           }
         ]
       }
+    },
+    {
+      "version": "v0.9",
+      "updateDataModel": {
+        "surfaceId": "gallery-weather-current",
+        "value": {
+          "tempHigh": 72,
+          "tempLow": 58,
+          "location": "Austin, TX",
+          "description": "Clear skies with light breeze",
+          "forecast": [
+            {
+              "date": "2025-12-16",
+              "icon": "☀️",
+              "temp": 74
+            },
+            {
+              "date": "2025-12-17",
+              "icon": "☀️",
+              "temp": 76
+            },
+            {
+              "date": "2025-12-18",
+              "icon": "⛅",
+              "temp": 71
+            },
+            {
+              "date": "2025-12-19",
+              "icon": "☀️",
+              "temp": 73
+            },
+            {
+              "date": "2025-12-20",
+              "icon": "☀️",
+              "temp": 75
+            }
+          ]
+        }
+      }
     }
-  }
-]
+  ]
+}

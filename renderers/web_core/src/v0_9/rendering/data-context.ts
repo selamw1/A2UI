@@ -14,22 +14,20 @@
  * limitations under the License.
  */
 
-import { Observable, of, combineLatest, isObservable } from "rxjs";
-import { switchMap } from "rxjs/operators";
-import { DataModel, DataSubscription } from "../state/data-model.js";
+import {signal, computed, Signal, effect} from '@preact/signals-core';
+import {z} from 'zod';
+import {DataModel, DataSubscription} from '../state/data-model.js';
 import type {
   DynamicValue,
   DataBinding,
   FunctionCall,
-} from "../schema/common-types.js";
-import { A2uiExpressionError } from "../errors.js";
+  Action,
+} from '../schema/common-types.js';
+import {A2uiExpressionError} from '../errors.js';
+import {isSignal} from '../catalog/types.js';
 
-/** A function that invokes a catalog function by name and returns its result synchronously or as an Observable. */
-export type FunctionInvoker = (
-  name: string,
-  args: Record<string, any>,
-  context: DataContext,
-) => any;
+import {FunctionInvoker} from '../catalog/function_invoker.js';
+import {SurfaceModel} from '../state/surface-model.js';
 
 /**
  * A contextual view of the main DataModel, serving as the unified interface for resolving
@@ -40,18 +38,24 @@ export type FunctionInvoker = (
  * and provides tools for evaluating complex, reactive expressions.
  */
 export class DataContext {
+  /** The shared, global DataModel instance for the entire UI surface. */
+  readonly dataModel: DataModel;
+  /** A callback for executing function calls defined in the A2UI component tree. */
+  readonly functionInvoker: FunctionInvoker;
+
   /**
    * Initializes a new DataContext.
    *
-   * @param dataModel The shared, global DataModel instance for the entire UI surface.
+   * @param surface The surface model this context belongs to.
    * @param path The absolute path in the DataModel that this context is scoped to (its "current working directory").
-   * @param functionInvoker An optional callback for executing function calls defined in the A2UI component tree against a UI catalog.
    */
   constructor(
-    readonly dataModel: DataModel,
+    readonly surface: SurfaceModel<any>,
     readonly path: string,
-    readonly functionInvoker?: FunctionInvoker,
-  ) {}
+  ) {
+    this.dataModel = surface.dataModel;
+    this.functionInvoker = surface.catalog.invoker;
+  }
 
   /**
    * Mutates the underlying DataModel at the specified path.
@@ -79,44 +83,42 @@ export class DataContext {
    * @returns The synchronously resolved value.
    */
   resolveDynamicValue<V>(value: DynamicValue): V {
-    // 1. Literal Check
-    if (typeof value !== "object" || value === null || Array.isArray(value)) {
-      // TypeScript erases types at runtime, so we return the literal as V.
-      // Schema validation handles strict type checking.
+    // 1. Literal check (excluding arrays and objects)
+    if (value === null || typeof value !== 'object' || Array.isArray(value)) {
       return value as V;
     }
 
     // 2. Path Check: { path: "..." }
-    if ("path" in value) {
+    if ('path' in value) {
       const absolutePath = this.resolvePath((value as DataBinding).path);
       return this.dataModel.get(absolutePath);
     }
 
     // 3. Function Call: { call: "...", args: ... }
-    if ("call" in value) {
+    if ('call' in value) {
       const call = value as FunctionCall;
       const args: Record<string, any> = {};
 
-      // Resolve arguments recursively
       for (const [key, argVal] of Object.entries(call.args)) {
         args[key] = this.resolveDynamicValue(argVal);
       }
 
-      // Evaluate function
-      // Note: sync resolution of async functions returns the Observable itself
-      if (!this.functionInvoker) {
-        throw new A2uiExpressionError(
-          `Failed to resolve dynamic value: Function invoker is not configured for call '${call.call}'.`,
-        );
+      const abortController = new AbortController();
+
+      const result = this.evaluateFunctionReactive<V>(
+        call.call,
+        args,
+        abortController.signal,
+      );
+
+      if (result === undefined) {
+        return undefined as any;
       }
 
-      const result = this.functionInvoker(call.call, args, this);
-      return result as V;
+      return (isSignal(result) ? result.peek() : result) as V;
     }
 
-    throw new A2uiExpressionError(
-      `Invalid DynamicValue format: ${JSON.stringify(value)}`,
-    );
+    return value as V;
   }
 
   /**
@@ -135,82 +137,210 @@ export class DataContext {
     value: DynamicValue,
     onChange: (value: V | undefined) => void,
   ): DataSubscription<V> {
-    let initialValue: V | undefined;
-    let isSync = true;
+    const sig = this.resolveSignal<V>(value);
 
-    const observable = this.toObservable<V>(value);
-    const sub = observable.subscribe((val) => {
-      if (isSync) {
-        initialValue = val;
-      } else {
+    let isSync = true;
+    let currentValue = sig.peek();
+
+    const dispose = effect(() => {
+      const val = sig.value;
+      currentValue = val;
+      if (!isSync) {
         onChange(val);
       }
     });
     isSync = false;
 
     return {
-      value: initialValue as unknown as V,
-      unsubscribe: () => sub.unsubscribe(),
+      get value() {
+        return currentValue;
+      },
+      unsubscribe: () => {
+        dispose();
+        if ((sig as any).unsubscribe) {
+          (sig as any).unsubscribe();
+        }
+      },
     };
   }
 
-  private toObservable<V>(value: DynamicValue): Observable<V> {
+  /**
+   * Returns a Preact Signal representing the reactive dynamic value.
+   *
+   * This method recursively resolves any nested path bindings or function calls into a
+   * single, reactive `Signal`. Any changes to the underlying data or function dependencies
+   * will cause this signal's value to update.
+   *
+   * @param value The DynamicValue to evaluate and observe.
+   * @returns A Preact Signal containing the reactive result of the evaluation.
+   */
+  resolveSignal<V>(value: DynamicValue): Signal<V> {
     // 1. Literal
-    if (typeof value !== "object" || value === null || Array.isArray(value)) {
-      return of(value as V);
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+      return signal(value as V);
     }
 
     // 2. Path Check
-    if ("path" in value) {
+    if ('path' in value) {
       const absolutePath = this.resolvePath((value as DataBinding).path);
-      // Create an observable from the data model subscription
-      return new Observable<V>((subscriber) => {
-        const sub = this.dataModel.subscribe<V>(absolutePath, (val) => {
-          subscriber.next(val as V);
-        });
-        // Emit initial value immediately
-        subscriber.next(this.dataModel.get(absolutePath));
-        return () => sub.unsubscribe();
-      });
+      return this.dataModel.getSignal<V>(absolutePath) as Signal<V>;
     }
 
     // 3. Function Call
-    if ("call" in value) {
+    if ('call' in value) {
       const call = value as FunctionCall;
-      const argObservables: Record<string, Observable<any>> = {};
+      const argSignals: Record<string, Signal<any>> = {};
 
       for (const [key, argVal] of Object.entries(call.args)) {
-        argObservables[key] = this.toObservable(argVal);
+        argSignals[key] = this.resolveSignal(argVal);
       }
 
-      // If no args, just call directly
-      if (Object.keys(argObservables).length === 0) {
-        return this.evaluateFunctionReactive(call.call, {});
+      if (Object.keys(argSignals).length === 0) {
+        const abortController = new AbortController();
+        const result = this.evaluateFunctionReactive<V>(
+          call.call,
+          {},
+          abortController.signal,
+        );
+        const sig = result instanceof Signal ? result : signal(result);
+        (sig as any).unsubscribe = () => abortController.abort();
+        return sig;
       }
 
-      return combineLatest(argObservables).pipe(
-        switchMap((args) => this.evaluateFunctionReactive<V>(call.call, args)),
-      );
+      const keys = Object.keys(argSignals);
+      const resultSig = signal<V | undefined>(undefined);
+      let abortController: AbortController | undefined;
+      let innerUnsubscribe: (() => void) | undefined;
+
+      const argsSig = computed(() => {
+        const argsRecord: Record<string, any> = {};
+        for (let i = 0; i < keys.length; i++) {
+          argsRecord[keys[i]] = argSignals[keys[i]].value;
+        }
+        return argsRecord;
+      });
+
+      const stopper = effect(() => {
+        try {
+          const args = argsSig.value;
+          if (abortController) abortController.abort();
+          if (innerUnsubscribe) {
+            innerUnsubscribe();
+            innerUnsubscribe = undefined;
+          }
+          abortController = new AbortController();
+
+          const res = this.evaluateFunctionReactive<V>(
+            call.call,
+            args,
+            abortController.signal,
+          );
+
+          if (isSignal(res)) {
+            innerUnsubscribe = effect(() => {
+              resultSig.value = res.value;
+            });
+          } else {
+            resultSig.value = res;
+          }
+        } catch (e: any) {
+          this.dispatchExpressionError(e, call.call);
+          // In reactive mode, we should not throw. Instead, reset the signal value.
+          resultSig.value = undefined;
+        }
+      });
+
+      (resultSig as any).unsubscribe = () => {
+        stopper();
+        if (innerUnsubscribe) innerUnsubscribe();
+        if (abortController) abortController.abort();
+        for (let i = 0; i < keys.length; i++) {
+          const argSig = argSignals[keys[i]];
+          if ((argSig as any).unsubscribe) {
+            (argSig as any).unsubscribe();
+          }
+        }
+      };
+
+      return resultSig as unknown as Signal<V>;
     }
 
-    return of(value as V);
+    return signal(value as unknown as V);
+  }
+
+  /**
+   * Resolves an action by evaluating its top-level dynamic values.
+   *
+   * For event actions, it resolves each value in the context map.
+   * For function call actions, it evaluates the call.
+   *
+   * This is non-recursive: it only resolves one level deep for the context record,
+   * in accordance with the schema specification that requires values to be single
+   * DynamicValue types and prevents arbitrary nesting.
+   */
+  resolveAction(action: Action): any {
+    if ('event' in action) {
+      const resolvedContext: Record<string, any> = {};
+      if (action.event.context) {
+        for (const [key, value] of Object.entries(action.event.context)) {
+          resolvedContext[key] = this.resolveDynamicValue(value);
+        }
+      }
+      return {
+        event: {
+          ...action.event,
+          context: resolvedContext,
+        },
+      };
+    }
+    if ('functionCall' in action) {
+      return this.resolveDynamicValue(action.functionCall);
+    }
+    return action;
   }
 
   private evaluateFunctionReactive<V>(
     name: string,
     args: Record<string, any>,
-  ): Observable<V> {
-    if (!this.functionInvoker) {
-      throw new A2uiExpressionError(
-        `Failed to resolve dynamic value: Function invoker is not configured for call '${name}'.`,
-      );
+    abortSignal?: AbortSignal,
+  ): Signal<V> | V {
+    try {
+      return this.functionInvoker(name, args, this, abortSignal);
+    } catch (e: any) {
+      this.dispatchExpressionError(e, name);
+      return undefined as any;
     }
-    const result = this.functionInvoker(name, args, this);
+  }
 
-    if (isObservable(result)) {
-      return result as Observable<V>;
+  private dispatchExpressionError(e: any, name: string): void {
+    if (e?.name === 'ZodError' || e instanceof z.ZodError) {
+      const err = new A2uiExpressionError(
+        `Validation failed for function '${name}': ${e.message}`,
+        name,
+        e.errors ?? e.issues,
+      );
+      this.surface.dispatchError({
+        code: 'EXPRESSION_ERROR',
+        message: err.message,
+        expression: name,
+        details: err.details,
+      });
+    } else if (e instanceof A2uiExpressionError) {
+      this.surface.dispatchError({
+        code: 'EXPRESSION_ERROR',
+        message: e.message,
+        expression: e.expression,
+        details: e.details,
+      });
+    } else {
+      this.surface.dispatchError({
+        code: 'EXPRESSION_ERROR',
+        message:
+          e.message ?? `An unexpected error occurred in function ${name}.`,
+        expression: name,
+        details: {stack: e.stack},
+      });
     }
-    return of(result as V);
   }
 
   /**
@@ -224,25 +354,22 @@ export class DataContext {
    */
   nested(relativePath: string): DataContext {
     const newPath = this.resolvePath(relativePath);
-    return new DataContext(this.dataModel, newPath, this.functionInvoker);
+    return new DataContext(this.surface, newPath);
   }
 
   private resolvePath(path: string): string {
-    // Absolute path - no resolution required.
-    if (path.startsWith("/")) {
+    if (path.startsWith('/')) {
       return path;
     }
-    // Handle specific cases like '.' or empty
-    if (path === "" || path === ".") {
+    if (path === '' || path === '.') {
       return this.path;
     }
 
-    // Normalize current path (remove trailing slash if exists, unless root)
     let base = this.path;
-    if (base.endsWith("/") && base.length > 1) {
+    if (base.endsWith('/') && base.length > 1) {
       base = base.slice(0, -1);
     }
-    if (base === "/") base = "";
+    if (base === '/') base = '';
 
     return `${base}/${path}`;
   }

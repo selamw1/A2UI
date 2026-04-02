@@ -6,18 +6,18 @@ Integrate A2UI into your application using the renderer for your platform.
 
 | Renderer                 | Platform           | v0.8 | v0.9 | Status            |
 | ------------------------ | ------------------ | ---- | ---- | ----------------- |
-| **React**                | Web                | ✅    | ❌    | ✅ Stable          |
-| **Lit (Web Components)** | Web                | ✅    | ✅    | ✅ Stable          |
-| **Angular**              | Web                | ✅    | ✅    | ✅ Stable          |
-| **Flutter (GenUI SDK)**  | Mobile/Desktop/Web | ✅    | ✅    | ✅ Stable          |
+| **[React](https://github.com/google/A2UI/tree/main/renderers/react)** | Web | ✅ | ❌ | ✅ Stable |
+| **[Lit (Web Components)](https://github.com/google/A2UI/tree/main/renderers/lit)** | Web | ✅ | ✅ | ✅ Stable |
+| **[Angular](https://github.com/google/A2UI/tree/main/renderers/angular)** | Web | ✅ | ✅ | ✅ Stable |
+| **[Flutter (GenUI SDK)](https://docs.flutter.dev/ai/genui)** | Mobile/Desktop/Web | ✅ | ✅ | ✅ Stable |
 | **SwiftUI**              | iOS/macOS          | —    | —    | 🚧 Planned Q2 2026 |
 | **Jetpack Compose**      | Android            | —    | —    | 🚧 Planned Q2 2026 |
 
 ## Component Catalogs
 
-A component catalog is any collection of components — standard ones, your custom components, or shared libraries. **Your design system is what matters.** You can register any collection of components and functions, and A2UI will work with them. The catalog is just the contract between your agent and your renderer.
+A component catalog is any collection of components — the Basic Catalog, your own components, or shared libraries. **Your design system is what matters.** You can register any collection of components and functions, and A2UI will work with them. The catalog is just the contract between your agent and your renderer.
 
-See [Custom Components](custom-components.md) for how to extend or replace the standard catalog.
+See [Defining Your Own Catalog](defining-your-own-catalog.md) for how to define a catalog that matches your design system.
 
 ## Shared Web Library
 
@@ -54,18 +54,58 @@ TODO: Add verified setup example.
 > coming days.
 
 ```bash
-npm install @a2ui/angular @a2ui/web-lib
+npm install @a2ui/angular @a2ui/web_core
 ```
 
 The Angular renderer provides:
 
-- **`provideA2UI()` function**: Configures A2UI in your app config
-- **`Surface` component**: Renders A2UI surfaces
-- **`MessageProcessor` service**: Handles incoming A2UI messages
+- **`A2uiRendererService`**: A service that manages the A2UI message processor and reactive model.
+- **`a2ui-v09-component-host` component**: A dynamic component host that renders A2UI components from a surface.
+- **`A2UI_RENDERER_CONFIG` token**: Used to configure the renderer with catalogs and action handlers.
 
-TODO: Add verified setup example.
+### Setup Example (v0.9)
 
-**See working example:** [Angular restaurant sample](https://github.com/google/a2ui/tree/main/samples/client/angular/projects/restaurant)
+A2UI uses versioned imports for its protocol-specific implementations. For v0.9, configure your application providers as follows:
+
+```typescript
+import { ApplicationConfig } from '@angular/core';
+import { 
+  A2UI_RENDERER_CONFIG, 
+  A2uiRendererService, 
+  minimalCatalog 
+} from '@a2ui/angular/v0_9';
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    {
+      provide: A2UI_RENDERER_CONFIG,
+      useValue: {
+        catalogs: [minimalCatalog],
+        actionHandler: (action) => {
+          console.log('Action dispatched:', action);
+        }
+      }
+    },
+    A2uiRendererService
+  ]
+};
+```
+
+**See working example:** [Angular v0.9 Explorer](https://github.com/google/a2ui/tree/main/renderers/angular/a2ui_explorer)
+
+## React
+
+```bash
+npm install @a2ui/react @a2ui/web-lib
+```
+
+The React renderer provides:
+
+- **`<A2UISurface>` component**: Renders A2UI surfaces in your React app
+- **`useA2UI()` hook**: Accesses the message processor from any component
+- **`MessageProcessor` class**: Handles incoming A2UI messages (shared with other web renderers)
+
+**See working example:** [React shell](https://github.com/google/A2UI/tree/main/samples/client/react/shell)
 
 ## Flutter (GenUI SDK)
 
@@ -93,7 +133,7 @@ Common transport options:
 
 TODO: Add transport implementation examples.
 
-**See:** [Transports guide](../transports.md)
+**See:** [Transports guide](../concepts/transports.md)
 
 ## Handling User Actions
 
@@ -121,6 +161,6 @@ TODO: Add error handling examples.
 
 - **[Quickstart](../quickstart.md)**: Try the demo application
 - **[Theming & Styling](theming.md)**: Customize the look and feel
-- **[Custom Components](custom-components.md)**: Extend the component catalog
+- **[Defining Your Own Catalog](defining-your-own-catalog.md)**: Extend the component catalog
 - **[Agent Development](agent-development.md)**: Build agents that generate A2UI
 - **[Reference Documentation](../reference/messages.md)**: Deep dive into the protocol
