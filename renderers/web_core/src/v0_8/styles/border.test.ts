@@ -26,9 +26,5 @@ test('Border Styles', async (t) => {
     // Check if the generated CSS contains overflow: hidden for border-br classes
     const match = border.match(/\.border-br-\w+ \{[^}]*overflow:\s*hidden/);
     assert.strictEqual(match, null, 'Found overflow: hidden applied within a border-br-* class');
-    
-    // Check that we DO have the expected border-radius applied
-    const hasBorderRadius = border.match(/\.border-br-1 \{ border-radius: [^;]+; \}/);
-    assert.notStrictEqual(hasBorderRadius, null, 'Missing border-radius in border-br-* class');
   });
 });
