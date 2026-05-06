@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-import { Component, computed, ChangeDetectionStrategy } from '@angular/core';
-import { ComponentHostComponent } from '../../core/component-host.component';
-import { getNormalizedPath } from '../../core/utils';
-import { BasicCatalogComponent } from './basic-catalog-component';
-import { JUSTIFY_MAP, ALIGN_MAP } from './utils';
+import {Component, computed, ChangeDetectionStrategy} from '@angular/core';
+import {ComponentHostComponent} from '../../core/component-host.component';
+import {getNormalizedPath} from '../../core/utils';
+import {BasicCatalogComponent} from './basic-catalog-component';
+import {JUSTIFY_MAP, ALIGN_MAP} from './utils';
+import {RowApi} from '@a2ui/web_core/v0_9/basic_catalog';
 
 /**
  * Angular implementation of the A2UI Row component (v0.9).
@@ -51,7 +52,7 @@ import { JUSTIFY_MAP, ALIGN_MAP } from './utils';
     @if (isRepeating()) {
       @for (item of children(); track item; let i = $index) {
         <a2ui-v09-component-host
-          [componentKey]="{ id: templateId()!, basePath: getNormalizedPath(i) }"
+          [componentKey]="{id: templateId()!, basePath: getNormalizedPath(i)}"
           [surfaceId]="surfaceId()"
         >
         </a2ui-v09-component-host>
@@ -60,7 +61,7 @@ import { JUSTIFY_MAP, ALIGN_MAP } from './utils';
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class RowComponent extends BasicCatalogComponent {
+export class RowComponent extends BasicCatalogComponent<typeof RowApi> {
   protected readonly justify = computed(() => {
     const val = this.props()['justify']?.value();
     return val ? JUSTIFY_MAP[val] || val : undefined;
@@ -85,11 +86,11 @@ export class RowComponent extends BasicCatalogComponent {
 
   protected readonly normalizedChildren = computed(() => {
     if (this.isRepeating()) return [];
-    return this.children().map((child) => {
+    return this.children().map(child => {
       if (typeof child === 'object' && child !== null && 'id' in child) {
-        return child as { id: string; basePath: string };
+        return child as {id: string; basePath: string};
       }
-      return { id: child as string, basePath: this.dataContextPath() };
+      return {id: child as string, basePath: this.dataContextPath()};
     });
   });
 
