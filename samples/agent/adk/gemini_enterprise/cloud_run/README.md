@@ -16,21 +16,33 @@ A2UI components on Gemini Enterprise UI.
 
 ## Prerequisites
 
-Before running the deployment script, ensure you have completed the following authentication steps:
+Before running the deployment script, ensure you have the following:
 
-1.  **Authenticate with Google Cloud**:
-    ```bash
-    gcloud auth login
-    ```
-2.  **Set up Application Default Credentials**:
-    ```bash
-    gcloud auth application-default login
-    ```
-3.  **Enable Required APIs**:
-    Ensure the Cloud Run and Discovery Engine APIs are enabled in your project.
-    ```bash
-    gcloud services enable run.googleapis.com discoveryengine.googleapis.com --project=<YOUR_PROJECT_ID>
-    ```
+- A **Google Cloud Project** with billing enabled.
+- **Google Cloud SDK** installed and up to date.
+
+### Authentication
+
+Authenticate with Google Cloud by running the following commands:
+
+```bash
+gcloud auth login
+gcloud auth application-default login
+gcloud config set project <YOUR_PROJECT_ID>
+```
+
+### Enable Required APIs
+
+Enable the required Google Cloud APIs for Cloud Run, Cloud Build, Vertex AI, and Discovery Engine:
+
+```bash
+gcloud services enable \
+run.googleapis.com \
+cloudbuild.googleapis.com \
+aiplatform.googleapis.com \
+discoveryengine.googleapis.com \
+--project <YOUR_PROJECT_ID>
+```
 
 ## Steps
 
