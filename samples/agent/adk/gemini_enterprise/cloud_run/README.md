@@ -14,6 +14,24 @@ Gemini-based agent that can communicate with users with A2UI components. By the
 end of this guide, you will have an agent running on Cloud Run and can display
 A2UI components on Gemini Enterprise UI.
 
+## Prerequisites
+
+Before running the deployment script, ensure you have completed the following authentication steps:
+
+1.  **Authenticate with Google Cloud**:
+    ```bash
+    gcloud auth login
+    ```
+2.  **Set up Application Default Credentials**:
+    ```bash
+    gcloud auth application-default login
+    ```
+3.  **Enable Required APIs**:
+    Ensure the Cloud Run and Discovery Engine APIs are enabled in your project.
+    ```bash
+    gcloud services enable run.googleapis.com discoveryengine.googleapis.com --project=<YOUR_PROJECT_ID>
+    ```
+
 ## Steps
 
 There are 2 steps:
@@ -33,8 +51,8 @@ chmod +x deploy.sh
 ./deploy.sh <YOUR_PROJECT_ID> <YOUR_SERVICE_NAME> [MODEL_NAME]
 ```
 
-*   `MODEL_NAME`: Optional. Can be `gemini-2.5-pro` or `gemini-2.5-flash`.
-    Defaults to `gemini-2.5-flash` if not specified.
+- `MODEL_NAME`: Optional. Can be `gemini-2.5-pro` or `gemini-2.5-flash`.
+  Defaults to `gemini-2.5-flash` if not specified.
 
 For example:
 
@@ -86,15 +104,15 @@ curl -X POST -H "Authorization: Bearer $(gcloud auth print-access-token)" -H "Co
 
 **Placeholder Descriptions:**
 
-*   `PROJECT_NUMBER`: Your Google Cloud project number.
-*   `LOCATION`: The location of your Discovery Engine instance (e.g., `global`).
-*   `ENGINE_ID`: The ID of your Gemini Enterprise engine (a.k.a App ID).
-*   `AGENT_NAME`: A unique name for your agent.
-*   `AGENT_DISPLAY_NAME`: The name that will be displayed in the Gemini
-    Enterprise UI.
-*   `AGENT_DESCRIPTION`: A brief description of your agent's capabilities.
-*   `AGENT_URL`: The service URL of your deployed agent which was printed in the
-    previous step.
+- `PROJECT_NUMBER`: Your Google Cloud project number.
+- `LOCATION`: The location of your Discovery Engine instance (e.g., `global`).
+- `ENGINE_ID`: The ID of your Gemini Enterprise engine (a.k.a App ID).
+- `AGENT_NAME`: A unique name for your agent.
+- `AGENT_DISPLAY_NAME`: The name that will be displayed in the Gemini
+  Enterprise UI.
+- `AGENT_DESCRIPTION`: A brief description of your agent's capabilities.
+- `AGENT_URL`: The service URL of your deployed agent which was printed in the
+  previous step.
 
 **3. Locate the agent on the Gemini Enterprise UI:**
 
