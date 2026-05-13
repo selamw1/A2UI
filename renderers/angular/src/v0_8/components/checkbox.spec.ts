@@ -18,14 +18,14 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Checkbox } from './checkbox';
 import { MessageProcessor } from '../data/processor';
 import { Theme } from '../rendering/theming';
-import { Types } from '../types';
+import type { A2UIClientEventMessage, CheckboxNode } from '../types';
 
 describe('Checkbox Component', () => {
   let component: Checkbox;
   let fixture: ComponentFixture<Checkbox>;
   let mockProcessor: jasmine.SpyObj<MessageProcessor>;
 
-  const mockNode: Types.CheckboxNode = {
+  const mockNode: CheckboxNode = {
     id: 'chk-1',
     type: 'CheckBox',
     weight: 1,
@@ -58,7 +58,7 @@ describe('Checkbox Component', () => {
     fixture.componentRef.setInput('component', mockNode);
     fixture.componentRef.setInput('weight', 1);
     fixture.componentRef.setInput('label', { literalString: 'Accept Terms' });
-    fixture.componentRef.setInput('checked', { literalBoolean: false });
+    fixture.componentRef.setInput('value', { literalBoolean: false });
 
     fixture.detectChanges();
   });
@@ -76,7 +76,7 @@ describe('Checkbox Component', () => {
     const inputEl = fixture.nativeElement.querySelector('input');
     expect(inputEl.checked).toBeFalse();
 
-    fixture.componentRef.setInput('checked', { literalBoolean: true });
+    fixture.componentRef.setInput('value', { literalBoolean: true });
     fixture.detectChanges();
     expect(inputEl.checked).toBeTrue();
   });
@@ -87,8 +87,7 @@ describe('Checkbox Component', () => {
     inputEl.dispatchEvent(new Event('change'));
 
     expect(mockProcessor.dispatch).toHaveBeenCalled();
-    const message = mockProcessor.dispatch.calls.mostRecent()
-      .args[0] as Types.A2UIClientEventMessage;
+    const message = mockProcessor.dispatch.calls.mostRecent().args[0] as A2UIClientEventMessage;
     expect(message.userAction!.name).toBe('toggle');
     expect(message.userAction!.context!['checked']).toBeTrue();
   });

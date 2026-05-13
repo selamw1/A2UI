@@ -6,6 +6,19 @@ This guide is for project maintainers. It details the publishing process to the 
 
 The following scripts in `renderers/scripts/` automate the versioning, building, testing, and publishing of packages. These should generally be run from the `main` branch after a PR has been merged.
 
+### Pre-requirement: Artifact registry configuration
+
+_(Note: Only Googlers will be able to do this. This is a one-time setup.)_
+
+Add the following line to your `~/.npmrc` file:
+
+```
+//us-npm.pkg.dev/oss-exit-gate-prod/a2ui--npm/:_authToken=<auth_token>
+```
+
+The `<auth_token>` field gets populated by the `google-artifactregistry-auth`
+command on "Step 2" later.
+
 ### 1. Increment Versions (Local)
 
 To increment a package version and automatically sync all internal dependents (updating their `package-lock.json` files). This should be done in a PR:
@@ -44,6 +57,7 @@ This script will:
 - `--yes`: Bypasses the manual user confirmation prompt (useful for CI).
 - `--dry-run`: Simulates the process, printing the commands it *would* execute without actually running them.
 - `--skip-tests`: Skips the `npm run test` phase before publishing.
+- `--test-only`: Runs the full build and test suite in topological order, but skips the final `npm run publish:package` step. Useful for verifying that packages build and tests pass before performing a real release.
 
 ### 3. Upload Manifest
 
@@ -53,7 +67,25 @@ Finally, trigger the public release to npmjs.com by uploading a manifest file:
 ./renderers/scripts/upload_manifest.mjs
 ```
 
-This generates a `manifest.json` with the current versions of all renderer packages and uploads it to GCS to trigger the internal release infrastructure.
+This generates a `manifest.json` with the current versions of all renderer packages and uploads it to GCS to trigger the internal release infrastructure. You should receive an email from exit-gate noting that publishing has commenced.
+
+#### Manual alternative
+
+You can also do this step manually, if you are authenticated with `gcloud` with a corporate Google account in the correct groups:
+
+1. Create a new manifest.json file with these contents:
+   ```json
+   {
+     "publish_all": true
+   }
+   ```
+
+2. Upload the file
+
+   ```sh
+   gcloud storage cp manifest.json gs://oss-exit-gate-prod-projects-bucket/a2ui/npm/manifests/manifest.json
+   ```
+
 ---
 
 ## Internal Release Process
@@ -83,7 +115,7 @@ npm run publish:package
 **What happens during `npm run publish:package`?**
 Before publishing, the script runs the necessary `build` command which processes the code. Then, a preparation script (usually `prepare-publish.mjs`) runs, which:
 1. Copies `package.json`, `README.md`, and `LICENSE` to the `dist/` folder.
-2. If it's a renderer, it reads the `version` from `@a2ui/web_core` and updates the `file:` dependency in the `dist/package.json` to the actual core version (e.g., `^0.9.0`).
+2. It scans all dependencies and peerDependencies for internal `@a2ui/` packages (those using `file:` links) and updates them to the actual current versions in the mono-repo (e.g., `^0.9.0`).
 3. Adjusts exports and paths (removing the `./dist/` prefix) so they are correct when consumed from the package root.
 4. Removes any build scripts (`prepublishOnly`, `scripts`, `wireit`) so they don't interfere with the publish process.
 
