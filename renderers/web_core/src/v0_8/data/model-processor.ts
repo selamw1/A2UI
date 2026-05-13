@@ -777,7 +777,7 @@ export class A2uiMessageProcessor implements MessageProcessor {
     visited: Set<string>,
     dataContextPath: string,
     idSuffix = "",
-    isInsideAction = false,
+    isInsideAction = false
   ): ResolvedValue {
     // 1. If it's a string that matches a component ID, build that node.
     if (!isInsideAction && typeof value === "string" && surface.components.has(value)) {
