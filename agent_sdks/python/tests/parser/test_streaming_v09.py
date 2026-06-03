@@ -457,7 +457,6 @@ def test_v09_path_heuristic_absolute_path(mock_catalog):
 def test_v09_single_top_level_object(mock_catalog):
   """Tests that v0.9 supports a single top-level object without array wrapping."""
   parser = A2uiStreamParser(catalog=mock_catalog)
-  parser._validator = None
 
   chunk = (
       A2UI_OPEN_TAG
@@ -476,12 +475,12 @@ def test_v09_single_top_level_object(mock_catalog):
 def test_v09_multiple_top_level_objects(mock_catalog):
   """Tests that v0.9 supports multiple consecutive top-level objects without array wrapping."""
   parser = A2uiStreamParser(catalog=mock_catalog)
-  parser._validator = None
 
   chunk = (
       A2UI_OPEN_TAG
       + '{"version": "v0.9", "createSurface": {"surfaceId": "s1", "catalogId": "c1"}}\n'
-      + '{"version": "v0.9", "updateComponents": {"surfaceId": "s1", "components": [{"id": "root", "component": "Text", "text": "Hello"}]}}'
+      + '{"version": "v0.9", "updateComponents": {"surfaceId": "s1", "components":'
+      ' [{"id": "root", "component": "Text", "text": "Hello"}]}}'
       + A2UI_CLOSE_TAG
   )
   messages = []
@@ -492,4 +491,3 @@ def test_v09_multiple_top_level_objects(mock_catalog):
   assert len(messages) == 2
   assert messages[0]["createSurface"]["surfaceId"] == "s1"
   assert messages[1][MSG_TYPE_UPDATE_COMPONENTS]["components"][0]["text"] == "Hello"
-
