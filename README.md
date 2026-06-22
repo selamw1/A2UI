@@ -1,10 +1,3 @@
-> ⚠️ NOTICE: This repository will be moved to another GitHub organization on
-> Wednesday June 3rd, 2026. We will be locking this repo on that day to
-> facilitate the transfer. If you have this repo cloned or forked, you may need
-> to re-clone, create a new fork, or modify your remotes in order to maintain
-> your development setup. We will automatically migrate pull requests and issues
-> as they are once the repo is locked.
-
 # A2UI: Agent-to-User Interface
 
 A2UI is an open-source project, complete with a format
@@ -116,21 +109,35 @@ Pick the path that matches where you want to start:
 | 🎨 **[A2UI Composer](https://a2ui-composer.ag-ui.com/)** · **[Widget Builder](https://go.copilotkit.ai/A2UI-widget-builder)** | Generate A2UI JSON from a visual editor and paste it into any agent prompt — no install required.                                       | ~1 min |
 | 🎬 **[A2UI Theater](https://a2ui-composer.ag-ui.com/theater)**                                                                | Step through pre-built A2UI streaming scenarios across Lit, React, and Angular renderers — no install required.                         | ~1 min |
 
-### Restaurant Finder demo — TL;DR
+### Restaurant Finder demo — Summary
 
-Prerequisites: Node.js 18+, [uv](https://docs.astral.sh/uv/), and a [Gemini API key](https://aistudio.google.com/apikey).
+Prerequisites: Node.js 18+ (with [Corepack](https://nodejs.org/api/corepack.html) enabled), [uv](https://docs.astral.sh/uv/), and a [Gemini API key](https://aistudio.google.com/apikey).
 
 ```bash
-git clone https://github.com/google/A2UI.git
-cd A2UI
+git clone https://github.com/a2ui-project/a2ui.git
+cd a2ui
 export GEMINI_API_KEY="your_gemini_api_key"
+
+# Enable Corepack (macOS Homebrew users: see tip below)
+corepack enable
+
+yarn install
 cd samples/client/lit
-npm run demo:restaurant
+yarn demo:restaurant
 ```
 
-This one command installs dependencies, builds the renderers, starts the Python agent, and opens the client at `http://localhost:5173`. For step-by-step instructions, alternative demos, and troubleshooting see the **[full Quickstart](docs/quickstart.md)**.
+> [!TIP]
+> **macOS Homebrew Users:** If you previously installed standalone package managers, unlink conflicts before installing Corepack so Corepack can manage versions per-project:
+>
+> ```bash
+> brew unlink yarn pnpm
+> brew install corepack
+> corepack enable
+> ```
 
-### A2UI + AG-UI — TL;DR
+These commands install dependencies across workspaces, build the renderers, start the Python agent, and open the client at `http://localhost:5173`. For step-by-step instructions, alternative demos, and troubleshooting see the **[full Quickstart](docs/quickstart.md)**.
+
+### A2UI + AG-UI — Summary
 
 ```bash
 npx copilotkit@latest init
